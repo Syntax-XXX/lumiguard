@@ -20,7 +20,7 @@ class WelcomeCog(commands.Cog):
                 description=f"Hey {member.mention}, mach's dir gemütlich und fühl dich wie zu Hause! 💜",
                 color=discord.Color.purple()
             )
-            embed.set_footer(text="LumiGuard sagt: Sei lieb, oder ich zappe!")
+            embed.set_footer(text="LumiGuard: Sei lieb, oder ich zappe!")
             await channel.send(embed=embed)
 
 async def setup(bot):
