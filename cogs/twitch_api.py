@@ -32,7 +32,7 @@ class twitch_api(commands.Cog):
     def is_stream_live(self):
         headers = {
             "Client-ID": CLIENT_ID,
-            "Authorization": f"Bearer {IRC_TOKEN}"  # In Produktion OAuth-Token verwenden
+            "Authorization": f"Bearer {IRC_TOKEN}" 
         }
         url = f"https://api.twitch.tv/helix/streams?user_login={USERNAME}"
         response = requests.get(url, headers=headers).json()
@@ -79,7 +79,7 @@ class twitch_api(commands.Cog):
                 resp = s.recv(2048).decode("utf-8")
                 buffer += resp
                 lines = buffer.split("\r\n")
-                buffer = lines.pop()  # unvollständige Zeile bleibt im Buffer
+                buffer = lines.pop() 
 
                 for line in lines:
                     if line.startswith("PING"):
@@ -148,8 +148,6 @@ class twitch_api(commands.Cog):
         minutes = entry.get("watchtime_minutes", 0)
         hours = minutes // 60
         await ctx.send(f"🕒 **{twitchname}** hat ca. **{hours} Stunden** Lumi geschaut.")
-
-        # Rolle prüfen/vergeben
         if twitchname == ctx.author.name.lower() or entry.get("discord") == str(ctx.author):
             await self.assign_roles(ctx, ctx.author, hours)
 

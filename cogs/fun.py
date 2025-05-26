@@ -11,11 +11,11 @@ class AdminCommands(commands.Cog):
         self.bot = bot
 
     @commands.command(name="GuteNacht", help="Stops the bot")
-    @commands.is_owner()  # Only the bot owner can use this command
+    @commands.is_owner() 
     async def GuteNacht(self, ctx):
         await ctx.send("Gute Nacht!")
         await self.bot.close()
-        sys.exit(0)  # Optional: if running in a script
+        sys.exit(0)
 
 class Fun(commands.Cog):
     def __init__(self, bot):
@@ -80,7 +80,6 @@ class Fun(commands.Cog):
             await message.add_reaction("🤙")
         if target_user in message.mentions:
             if message.author.id == target_user.id:
-                # target user pinged themselves
                 await message.reply("**Warum pingst du dich selber Oliver!?**")
                 await message.add_reaction("<:angy:1376308675052044329>")
             else:
