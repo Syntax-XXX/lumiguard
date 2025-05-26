@@ -1,5 +1,6 @@
 
 from discord.ext import commands
+import discord
 import random
 import time
 import random 
@@ -19,6 +20,23 @@ class AdminCommands(commands.Cog):
 class Fun(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+
+    @commands.command(name="hilfe", aliases=["help"])
+    async def help(self, message):
+        embed = discord.Embed(
+        title="📘 LumiGuard Befehle",
+        description="Hier sind einige nützliche Befehle für dich:",
+        color=discord.Color.green()
+         )
+        embed.add_field(name="!hilfe", value="Zeigt diese Hilfe an.", inline=False)
+        embed.add_field(name="!live", value="Prüft, ob LumiZAP gerade live ist.", inline=False)
+        embed.add_field(name="!status", value="Zeigt die Server-Statistiken an.", inline=False)
+        embed.add_field(name="!watchtime [TwitchName]", value="Zeigt deine oder eine andere Watchtime an.", inline=False)
+        embed.add_field(name="!verknüpfe <TwitchName>", value="Verknüpft deinen Discord mit einem Twitch-Konto.", inline=False)
+        embed.add_field(name="!topwatchtime", value="Zeigt das Watchtime-Leaderboard (Top 5) an.", inline=False)
+        embed.add_field(name="!kick / !ban / !warn", value="Moderationsbefehle für Admins.", inline=False)
+        embed.set_footer(text="Mit ❤️ von LumiGuard")
+        await message.reply(embed=embed)
 
     @commands.Cog.listener()
     async def on_message(self, message):
@@ -65,10 +83,10 @@ class Fun(commands.Cog):
                 # target user pinged themselves
                 await message.reply("**Warum pingst du dich selber Oliver!?**")
                 await message.add_reaction("<:angy:1376308675052044329>")
-        else:
-            if random.randint(1, 100) == 1:
-                await message.reply(f"**Ping nicht meinen Lieblings-Mod an! {message.author.mention}** <:angy:1376308675052044329>")
-                await message.add_reaction("<:angy:1376308675052044329>")
+            else:
+                if random.randint(1, 100) == 1:
+                    await message.reply(f"**Ping nicht meinen Lieblings-Mod an! {message.author.mention}** <:angy:1376308675052044329>")
+                    await message.add_reaction("<:angy:1376308675052044329>")
 
 async def setup(bot):
     await bot.add_cog(Fun(bot))

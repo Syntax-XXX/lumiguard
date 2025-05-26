@@ -10,10 +10,10 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-CLIENT_ID = os.getenv("TWITCH_CLIENT_ID")
-CLIENT_SECRET = os.getenv("TWITCH_CLIENT_SECRET")
-USERNAME = "Lumizap"
+CLIENT_ID = "f7s5tt4glns3ekcfqy1d5tqz85rutr"
+CLIENT_SECRET = "nh3s5zwvpgekhuy6leeyhh4h7mddy6"
 IRC_TOKEN = "f68ki9rqow62c8x0i325an9fjq90vm"
+USERNAME = "LumiGuard"
 BOT_NICK = "LumiGuard"
 CHANNEL = "#lumizap"
 DATA_FILE = "data/watchtime.json"
@@ -24,20 +24,27 @@ WATCHTIME_ROLES = {
     200: "🏅 200h Ehrenzuschauer"
 }
 
-class TwitchWatchtime(commands.Cog):
+class twitch_api(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.watchtime_thread = threading.Thread(target=self.run_irc_bot, daemon=True)
-        self.watchtime_thread.start()
+        threading.Thread(target=self.run_irc_bot, daemon=True).start()
 
     def is_stream_live(self):
         headers = {
             "Client-ID": CLIENT_ID,
-            "Authorization": f"Bearer {IRC_TOKEN}"
+            "Authorization": f"Bearer {IRC_TOKEN}"  # In Produktion OAuth-Token verwenden
         }
         url = f"https://api.twitch.tv/helix/streams?user_login={USERNAME}"
         response = requests.get(url, headers=headers).json()
         return bool(response.get("data"))
+
+    @commands.command(name="live")
+    async def live(self, ctx):
+        """Zeigt an, ob Lumi gerade auf Twitch live ist."""
+        if self.is_stream_live():
+            await ctx.send("🟣 Lumi ist gerade **LIVE** auf Twitch! 👉 https://twitch.tv/lumizap")
+        else:
+            await ctx.send("⚫ Lumi ist momentan **offline**.")
 
     def load_data(self):
         if not os.path.exists(DATA_FILE):
@@ -55,32 +62,52 @@ class TwitchWatchtime(commands.Cog):
             s.connect(("irc.chat.twitch.tv", 6667))
             s.send(f"PASS {IRC_TOKEN}\r\n".encode("utf-8"))
             s.send(f"NICK {BOT_NICK}\r\n".encode("utf-8"))
+            # CAP REQs für volle Features
+            s.send("CAP REQ :twitch.tv/tags\r\n".encode("utf-8"))
+            s.send("CAP REQ :twitch.tv/commands\r\n".encode("utf-8"))
+            s.send("CAP REQ :twitch.tv/membership\r\n".encode("utf-8"))
             s.send(f"JOIN {CHANNEL}\r\n".encode("utf-8"))
             print(f"[IRC] Verbunden mit {CHANNEL}")
 
             data = self.load_data()
             last_activity = {}
+            last_print = time.time()
+
+            buffer = ""
 
             while True:
                 resp = s.recv(2048).decode("utf-8")
+                buffer += resp
+                lines = buffer.split("\r\n")
+                buffer = lines.pop()  # unvollständige Zeile bleibt im Buffer
 
-                if resp.startswith("PING"):
-                    s.send("PONG :tmi.twitch.tv\r\n".encode("utf-8"))
-                    continue
+                for line in lines:
+                    if line.startswith("PING"):
+                        s.send("PONG :tmi.twitch.tv\r\n".encode("utf-8"))
+                        continue
 
-                if "PRIVMSG" in resp:
-                    user = resp.split("!", 1)[0][1:]
-                    now = time.time()
+                    if "PRIVMSG" in line:
+                        user = line.split("!", 1)[0][1:]
+                        msg_text = line.split(":", 2)[2].strip()
+                        now = time.time()
 
-                    if user not in SESSIONS:
-                        SESSIONS[user] = now
-                    last_activity[user] = now
-                    print(f"[IRC] {user} aktiv")
+                        if user not in SESSIONS:
+                            SESSIONS[user] = now
+                        last_activity[user] = now
+                        print(f"[IRC] Nachricht von {user}: {msg_text}")
 
                 now = time.time()
+                if now - last_print > 300:
+                    print(f"[IRC] Aktive Sessions: {len(SESSIONS)}")
+                    last_print = now
+
                 for user in list(SESSIONS.keys()):
-                    if now - last_activity.get(user, 0) > 1800:
-                        session_time = int((last_activity[user] - SESSIONS[user]) / 60)
+                    last = last_activity.get(user)
+                    if last is None:
+                        del SESSIONS[user]
+                        continue
+                    if now - last > 1800:  # 30 Minuten Inaktivität
+                        session_time = int((last - SESSIONS[user]) / 60)
                         data.setdefault(user, {}).setdefault("watchtime_minutes", 0)
                         data[user]["watchtime_minutes"] += session_time
                         print(f"[IRC] {user}: {session_time} Minuten gespeichert")
@@ -92,23 +119,39 @@ class TwitchWatchtime(commands.Cog):
         finally:
             s.close()
 
-    @commands.command(name="watchtime")
-    async def watchtime(self, ctx, twitch_user: str = None):# type: ignore
-        """Zeigt die Twitch-Watchtime eines Benutzers."""
+    @commands.command(name="verknüpfe")
+    async def verknuepfe(self, ctx, twitchname: str):
         data = self.load_data()
-        user = twitch_user or ctx.author.name
-        info = data.get(user.lower())
+        twitchname = twitchname.lower()
+        data.setdefault(twitchname, {})
+        data[twitchname]["discord"] = str(ctx.author)
+        self.save_data(data)
+        await ctx.send(f"✅ Twitch-Nutzer **{twitchname}** wurde mit dir verknüpft!")
 
-        if not info:
-            await ctx.send(f"📺 Keine Watchtime für `{user}` gefunden.")
+    @commands.command(name="watchtime")
+    async def watchtime(self, ctx, twitchname: str = None):  # type: ignore
+        data = self.load_data()
+
+        if twitchname is None:
+            # Suche verknüpften Twitchnamen
+            twitchname = next((k for k, v in data.items() if v.get("discord") == str(ctx.author)), None)
+            if twitchname is None:
+                await ctx.send("⚠️ Du hast noch keinen Twitch-Namen verknüpft. Nutze `!verknüpfe <twitchname>`.")
+                return
+
+        twitchname = twitchname.lower()
+        entry = data.get(twitchname)
+        if not entry:
+            await ctx.send(f"⚠️ Kein Eintrag für **{twitchname}** gefunden.")
             return
 
-        minutes = info.get("watchtime_minutes", 0)
+        minutes = entry.get("watchtime_minutes", 0)
         hours = minutes // 60
-        await ctx.send(f"⏱️ `{user}` hat bereits **{hours} Stunden** Lumi zugeschaut!")
+        await ctx.send(f"🕒 **{twitchname}** hat ca. **{hours} Stunden** Lumi geschaut.")
 
-        # Versuche Rolle zu vergeben
-        await self.assign_roles(ctx, ctx.author, hours)
+        # Rolle prüfen/vergeben
+        if twitchname == ctx.author.name.lower() or entry.get("discord") == str(ctx.author):
+            await self.assign_roles(ctx, ctx.author, hours)
 
     async def assign_roles(self, ctx, member, hours):
         if not isinstance(member, discord.Member):
@@ -123,8 +166,8 @@ class TwitchWatchtime(commands.Cog):
                 try:
                     await member.add_roles(role, reason="Automatisch durch Watchtime")
                     await ctx.send(f"🎉 {member.mention} hat die Rolle **{role.name}** erhalten!")
-                except:
-                    pass
+                except Exception as e:
+                    print(f"[Discord Role Error] {e}")
 
     @commands.command(name="topwatchtime")
     async def topwatchtime(self, ctx):
@@ -137,10 +180,12 @@ class TwitchWatchtime(commands.Cog):
             color=discord.Color.purple()
         )
         for i, (user, info) in enumerate(sorted_users, 1):
-            hours = info["watchtime_minutes"] // 60
-            embed.add_field(name=f"{i}. {user}", value=f"{hours} Stunden", inline=False)
+            hours = info.get("watchtime_minutes", 0) // 60
+            name = info.get("discord", user)
+            embed.add_field(name=f"{i}. {name}", value=f"{hours} Stunden", inline=False)
 
         await ctx.send(embed=embed)
 
+
 async def setup(bot):
-    await bot.add_cog(TwitchWatchtime(bot))
+    await bot.add_cog(twitch_api(bot))
