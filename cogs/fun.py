@@ -1,7 +1,6 @@
 
 from discord.ext import commands
 import random
-from twitch_api import is_stream_live
 import time
 import random 
 import sys
@@ -20,13 +19,6 @@ class AdminCommands(commands.Cog):
 class Fun(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-
-    @commands.command(name="live")
-    async def live(self, ctx):
-        if is_stream_live():
-            await ctx.send("🔴 LumiZAP ist **LIVE**! Schau vorbei: https://twitch.tv/lumizap")
-        else:
-            await ctx.send("📴 Lumi ist aktuell nicht live.")
 
     @commands.Cog.listener()
     async def on_message(self, message):

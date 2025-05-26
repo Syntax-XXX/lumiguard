@@ -43,9 +43,9 @@ class StatusPage(commands.Cog):
     @commands.command(name="status")
     async def status(self, ctx):
         guild = ctx.guild
-        status_data["members"] = guild.member_count
-        status_data["roles"] = len(guild.roles)
-        status_data["channels"] = len(guild.channels)
+        status_data["members"] = guild.member_count # type: ignore
+        status_data["roles"] = len(guild.roles) # type: ignore
+        status_data["channels"] = len(guild.channels) # type: ignore
 
         embed = discord.Embed(
             title=f"📊 Serverstatus von {guild.name}",

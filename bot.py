@@ -5,7 +5,7 @@ import config
 
 intents = discord.Intents.all()
 bot = commands.Bot(command_prefix="!", intents=intents)
-@bot.remove_command("help")
+@bot.remove_command("help") # type: ignore
 
 @bot.command(name="reload")
 @commands.has_permissions(administrator=True)
@@ -47,4 +47,4 @@ async def on_ready():
     await bot.tree.sync()
 
 
-bot.run(config.TOKEN)
+bot.run(config.TOKEN)# type: ignore
