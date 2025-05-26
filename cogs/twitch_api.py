@@ -10,9 +10,9 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-CLIENT_ID = "f7s5tt4glns3ekcfqy1d5tqz85rutr"
-CLIENT_SECRET = "nh3s5zwvpgekhuy6leeyhh4h7mddy6"
-IRC_TOKEN = "f68ki9rqow62c8x0i325an9fjq90vm"
+CLIENT_ID = os.getenv("CLIENT_ID")
+CLIENT_SECRET = os.getenv("CLIENT_SECRET")
+IRC_TOKEN = os.getenv("IRC_TOKEN")
 USERNAME = "LumiGuard"
 BOT_NICK = "LumiGuard"
 CHANNEL = "#lumizap"
