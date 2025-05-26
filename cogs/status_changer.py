@@ -8,6 +8,8 @@ class StatusChanger(commands.Cog):
         self.bot = bot
         self.statuses = itertools.cycle([
             discord.Game(name="mit Lumi"),
+            discord.Game(name="mit Olivers Zeugnis"),
+            discord.Game(name="mit SyntaxXXX"),
             discord.Activity(type=discord.ActivityType.watching, name="über Lumi's Server")
         ])
         self.change_status.start()

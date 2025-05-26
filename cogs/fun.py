@@ -44,6 +44,7 @@ class Fun(commands.Cog):
             return
         target_user = message.guild.get_member(366204965363908610)
         target_user2 = message.guild.get_member(970379709596729446)
+        lumi = message.guild.get_member(1337871697541599303)
         content = message.content.lower()
         if "zap" in content:
             await message.add_reaction("⚡")
@@ -62,6 +63,8 @@ class Fun(commands.Cog):
             await message.add_reaction("💀")
         if "☠️" in content:
             await message.add_reaction("☠️")
+        if lumi and lumi in message.mentions:
+            await message.reply("**Nix Lumi Pingen!!**")
         if self.bot.user in message.mentions and "bester bot" in message.content.lower():
             await message.reply(f"**Gut so!! {message.author.mention} ** <:angy:1376308675052044329>")
             await message.add_reaction("<:angy:1376308675052044329>")
